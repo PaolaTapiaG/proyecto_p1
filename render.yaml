@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: lumora-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    preDeployCommand: alembic upgrade head
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: AUTO_CREATE_TABLES
+        value: "false"
+      - key: ALLOW_DEV_AUTH
+        value: "false"
+      - key: ALLOW_LOCAL_AUTH
+        value: "true"
+      - key: LOCAL_JWT_SECRET
+        generateValue: true
+      - key: TRUSTED_HOSTS
+        fromService:
+          name: lumora-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: OLLAMA_BASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: OLLAMA_CHAT_MODEL
+        value: gemma4:12b
+      - key: OLLAMA_EMBEDDING_MODEL
+        value: qwen3-embedding:0.6b

@@ -1,0 +1,52 @@
+services:
+  database:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: lumora
+      POSTGRES_USER: lumora
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - lumora-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lumora -d lumora"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - lumora-redis:/data
+
+  api:
+    build: .
+    env_file: .env.production
+    environment:
+      APP_ENV: production
+      AUTO_CREATE_TABLES: "false"
+      ALLOW_DEV_AUTH: "false"
+      DATABASE_URL: postgresql+psycopg://lumora:${POSTGRES_PASSWORD}@database:5432/lumora
+      REDIS_URL: redis://redis:6379/0
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - lumora-media:/app/storage/uploads
+
+  web:
+    build: ./frontend
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+
+volumes:
+  lumora-postgres:
+  lumora-redis:
+  lumora-media:
