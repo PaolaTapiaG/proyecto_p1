@@ -68,7 +68,10 @@ def health(response: Response) -> dict[str, object]:
     except Exception:
         components["database"] = "unavailable"
 
-    if settings.ai_provider == "ollama":
+    if settings.ai_provider == "ollama_cloud":
+        if not settings.ollama_api_key:
+            components["ai"] = "unavailable"
+    elif settings.ai_provider == "ollama":
         try:
             response = httpx.get(
                 f"{settings.ollama_base_url.rstrip('/')}/api/tags", timeout=1.5

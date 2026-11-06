@@ -19,7 +19,7 @@ function AssistButton({ field, assisting, onAssist }) {
 export function CreateBotModal({ onClose, onCreate, onUpload, onAssist }) {
   const [form, setForm] = useState({
     name: "", last_name: "", persona: "", description: "", scenario: "", greeting: "",
-    age: "", appearance: "", visibility: "private", ai_model: "qwen3:8b",
+      age: "", appearance: "", visibility: "private", ai_model: import.meta.env.VITE_AI_MODE === "cloud" ? "gemma4:cloud" : "qwen3:8b",
     source_type: "original", source_name: "", research_enabled: false, assistant_notes: "",
   });
   const [avatarFile, setAvatarFile] = useState(null);
@@ -99,7 +99,7 @@ export function CreateBotModal({ onClose, onCreate, onUpload, onAssist }) {
         <label className="span-2 field-with-action"><span>Escenario base <AssistButton field="scenario" assisting={assisting} onAssist={assist} /></span><textarea value={form.scenario} onChange={update("scenario")} rows={3} /></label>
         <label>Edad<input value={form.age} onChange={update("age")} inputMode="numeric" /></label>
         <label>Visibilidad<select value={form.visibility} onChange={update("visibility")}><option value="private">Privado</option><option value="public">Público</option></select></label>
-        <label className="span-2">Modelo narrativo<select value={form.ai_model} onChange={update("ai_model")}><option value="qwen3:8b">Qwen3 8B · rapido local</option><option value="gemma4:12b">Gemma 4 12B · narrativa recomendada</option><option value="gemma4:26b">Gemma 4 26B · narrativa extensa</option></select><small>El modelo debe estar instalado en Ollama antes de iniciar el chat.</small></label>
+          <label className="span-2">Modelo narrativo<select value={form.ai_model} onChange={update("ai_model")}>{import.meta.env.VITE_AI_MODE === "cloud" ? <option value="gemma4:cloud">Gemma 4 Cloud</option> : <><option value="qwen3:8b">Qwen3 8B · rapido local</option><option value="gemma4:12b">Gemma 4 12B · narrativa recomendada</option><option value="gemma4:26b">Gemma 4 26B · narrativa extensa</option></>}</select></label>
         <label className="span-2">Rasgos físicos<input value={form.appearance} onChange={update("appearance")} /></label>
         <label>Tipo de origen<select value={form.source_type} onChange={update("source_type")}><option value="original">Original</option><option value="anime">Anime</option><option value="videogame">Videojuego</option><option value="film">Película</option><option value="series">Serie</option><option value="book">Libro</option><option value="other">Otro</option></select></label>
         <label>Obra de origen<input value={form.source_name} onChange={update("source_name")} disabled={form.source_type === "original"} /></label>

@@ -135,13 +135,27 @@ class MockAIProvider:
 class OllamaAIProvider:
     name = "ollama"
 
+    @staticmethod
+    def _selected_model(model: str | None) -> str:
+        if settings.ai_provider == "ollama_cloud":
+            return settings.ollama_chat_model
+        return model or settings.ollama_chat_model
+
+    @staticmethod
+    def _headers() -> dict[str, str]:
+        if settings.ai_provider == "ollama_cloud":
+            if not settings.ollama_api_key:
+                raise RuntimeError("OLLAMA_API_KEY is required for Ollama Cloud")
+            return {"Authorization": f"Bearer {settings.ollama_api_key}"}
+        return {}
+
     def complete(
         self,
         messages: list[AIMessage],
         model: str | None = None,
         options: GenerationOptions | None = None,
     ) -> AIResponse:
-        selected_model = model or settings.ollama_chat_model
+        selected_model = self._selected_model(model)
         generation = options or GenerationOptions()
         payload = {
             "model": selected_model,
@@ -165,6 +179,7 @@ class OllamaAIProvider:
             payload["format"] = generation.response_schema
         response = httpx.post(
             f"{settings.ollama_base_url.rstrip('/')}/api/chat",
+            headers=self._headers(),
             json=payload,
             timeout=300,
         )
@@ -186,7 +201,7 @@ class OllamaAIProvider:
         model: str | None = None,
         options: GenerationOptions | None = None,
     ) -> Generator[AIStreamChunk, None, None]:
-        selected_model = model or settings.ollama_chat_model
+        selected_model = self._selected_model(model)
         generation = options or GenerationOptions()
         payload = {
             "model": selected_model,
@@ -211,6 +226,7 @@ class OllamaAIProvider:
         with httpx.stream(
             "POST",
             f"{settings.ollama_base_url.rstrip('/')}/api/chat",
+            headers=self._headers(),
             json=payload,
             timeout=300,
         ) as response:
@@ -243,7 +259,7 @@ class OllamaAIProvider:
         try:
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 404:
+            if exc.response.status_code == 404 and settings.ai_provider != "ollama_cloud":
                 raise RuntimeError(
                     f"El modelo local '{model}' no esta instalado. Ejecuta: ollama pull {model}"
                 ) from exc
@@ -356,6 +372,7 @@ def get_ai_provider() -> AIProvider:
     providers: dict[str, AIProvider] = {
         "mock": MockAIProvider(),
         "ollama": OllamaAIProvider(),
+        "ollama_cloud": OllamaAIProvider(),
         "openai": OpenAIResponsesProvider(),
     }
     try:

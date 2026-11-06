@@ -12,6 +12,7 @@ os.environ["AUTO_CREATE_TABLES"] = "true"
 from fastapi.testclient import TestClient
 
 from app.core.config import Settings
+from app.modules.ai.provider import AIMessage, OllamaAIProvider
 from index import app
 from app.modules.conversations.orchestrator import RoleplayOrchestrator
 from app.modules.moderation.service import moderation_service
@@ -28,6 +29,39 @@ OTHER_HEADERS = {
 def test_neon_postgres_url_uses_psycopg_driver() -> None:
     settings = Settings(database_url="postgresql://user:secret@host.neon.tech/lumora?sslmode=require")
     assert settings.database_url.startswith("postgresql+psycopg://")
+
+
+def test_ollama_cloud_uses_hosted_model_and_private_key(monkeypatch) -> None:
+    from app.modules.ai import provider as provider_module
+
+    cloud_settings = Settings(
+        ai_provider="ollama_cloud",
+        ollama_base_url="https://ollama.com",
+        ollama_api_key="test-secret",
+        ollama_chat_model="gemma4:cloud",
+    )
+    monkeypatch.setattr(provider_module, "settings", cloud_settings)
+    captured = {}
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"message": {"content": "Respuesta cloud"}, "model": "gemma4:cloud"}
+
+    def fake_post(url, **kwargs):
+        captured.update(url=url, **kwargs)
+        return Response()
+
+    monkeypatch.setattr(provider_module.httpx, "post", fake_post)
+    response = OllamaAIProvider().complete(
+        [AIMessage(role="user", content="Hola")], model="gemma4:12b"
+    )
+    assert response.content == "Respuesta cloud"
+    assert captured["url"] == "https://ollama.com/api/chat"
+    assert captured["headers"] == {"Authorization": "Bearer test-secret"}
+    assert captured["json"]["model"] == "gemma4:cloud"
 
 
 def test_continuation_cleanup_and_balanced_layout() -> None:

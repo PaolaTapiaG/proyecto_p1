@@ -18,20 +18,20 @@ otra `*.onrender.com`.
 3. Completa las variables que Render solicita:
    - `DATABASE_URL`: la cadena de conexion de Neon para el proyecto `lumora`.
    - `REDIS_URL`: la URL de una instancia Render Key Value o Upstash Redis.
-   - `OLLAMA_BASE_URL`: un servidor Ollama publico y protegido que contenga
-     `gemma4:12b` y `qwen3-embedding:0.6b`.
+   - `OLLAMA_API_KEY`: una clave de Ollama Cloud creada en `https://ollama.com`.
    - `CORS_ORIGINS`: se completa despues de obtener la URL de Vercel.
 4. Espera a que el despliegue termine y copia la URL `https://...onrender.com`.
 
-Render no puede acceder al Ollama que corre en tu PC. Para chats reales en produccion,
-Ollama debe vivir en un servidor con GPU o ser reemplazado por un proveedor remoto.
-No publiques el puerto local 11434 directamente en internet.
+Render usa `https://ollama.com` y el modelo `gemma4:cloud`. Los bots con modelos
+locales previos tambien usan el modelo Cloud en este despliegue. La memoria conserva
+canon, recuerdos fijados, resumen y cronologia; la busqueda vectorial queda pendiente
+de un proveedor de embeddings remoto.
 
 ## 2. Publicar el frontend en Vercel
 
 1. En Vercel, selecciona **Add New > Project** e importa el mismo repositorio.
 2. Configura **Root Directory** como `frontend` y deja Vite como framework detectado.
-3. Define `VITE_API_URL` con
+3. Define `VITE_AI_MODE=cloud` y `VITE_API_URL` con
    `https://TU-API.onrender.com/api/v1` antes de desplegar.
 4. Al terminar, Vercel entrega una URL `https://...vercel.app`.
 
